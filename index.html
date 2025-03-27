@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Estilos de Texto</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        #textInput {
+            width: 100%;
+            height: 100px;
+            margin-bottom: 20px;
+            padding: 10px;
+        }
+
+        .style-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .style-row, .additional-styles {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .style-box, .additional-style {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: calc(25% - 10px);
+            min-width: 200px;
+        }
+
+        .style-name {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .continuation {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .slider {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        #selectedOutput {
+            background: #e0e0e0;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            min-height: 100px;
+        }
+
+        #additionalStyles {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <textarea id="textInput" placeholder="TEXT IN" rows="4"></textarea>
+
+        <div class="style-container">
+            <!-- Estilos iniciales -->
+            <div class="style-row">
+                <div class="style-box" data-style="Formal">
+                    <div class="style-name">Formal</div>
+                    <div class="continuation"></div>
+                </div>
+                <div class="style-box" data-style="Informal">
+                    <div class="style-name">Informal</div>
+                    <div class="continuation"></div>
+                </div>
+                <div class="style-box" data-style="Persuasivo">
+                    <div class="style-name">Persuasivo</div>
+                    <div class="continuation"></div>
+                </div>
+                <div class="style-box" data-style="Descriptivo">
+                    <div class="style-name">Descriptivo</div>
+                    <div class="continuation"></div>
+                </div>
+            </div>
+
+            <!-- Estilos adicionales ocultos inicialmente -->
+            <div class="additional-styles" id="additionalStyles">
+                <div class="style-box additional-style" data-style="Narrativo">
+                    <div class="style-name">Narrativo</div>
+                    <div class="continuation"></div>
+                </div>
+                <div class="style-box additional-style" data-style="Técnico">
+                    <div class="style-name">Técnico</div>
+                    <div class="continuation"></div>
+                </div>
+                <div class="style-box additional-style" data-style="Humoroso">
+                    <div class="style-name">Humoroso</div>
+                    <div class="continuation"></div>
+                </div>
+                <div class="style-box additional-style" data-style="Poético">
+                    <div class="style-name">Poético</div>
+                    <div class="continuation"></div>
+                </div>
+                <div class="style-box additional-style" data-style="Horror">
+                    <div class="style-name">Horror</div>
+                    <div class="continuation"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control deslizante para mostrar estilos adicionales -->
+        <div class="slider-container">
+            <input type="range" min="0" max="100" value="0" class="slider" id="styleSlider">
+        </div>
+
+        <!-- Área de texto seleccionado -->
+        <div id="selectedOutput"></div>
+
+        <!-- Control deslizante para longitud -->
+        <div class="length-slider-container">
+            <input type="range" min="0" max="100" value="100" class="slider" id="lengthSlider">
+        </div>
+    </div>
+
+    <script>
+        const textInput = document.getElementById('textInput');
+        const styleBoxes = document.querySelectorAll('.style-box');
+        const styleSlider = document.getElementById('styleSlider');
+        const additionalStyles = document.getElementById('additionalStyles');
+        const selectedOutput = document.getElementById('selectedOutput');
+        const lengthSlider = document.getElementById('lengthSlider');
+
+        const maxLength = 200; // Longitud máxima del texto
+        const apiKey = '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';
+        const proxyUrl = 'http://localhost:8080/https://api.qwen.com/v1/generate'; // URL del proxy
+
+        // Actualiza los textos de los estilos
+        function updateStyleBoxes() {
+            const inputText = textInput.value;
+            styleBoxes.forEach(box => {
+                const style = box.getAttribute('data-style');
+                // Aquí podrías hacer una llamada a la API para obtener el texto continuado
+                // Por ahora, usamos un texto de muestra
+                const continuation = `${inputText} [Continuación en estilo ${style}]`;
+                box.querySelector('.continuation').textContent = continuation;
+            });
+        }
+
+        // Muestra/oculta estilos adicionales
+        styleSlider.addEventListener('input', () => {
+            additionalStyles.style.display = styleSlider.value >= 50 ? 'flex' : 'none';
+        });
+
+        // Manejador de selección de estilo
+        document.querySelectorAll('.style-box').forEach(box => {
+            box.addEventListener('click', async () => {
+                const style = box.getAttribute('data-style');
+                const inputText = textInput.value;
+
+                try {
+                    const response = await fetch(proxyUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify({
+                            prompt: `${inputText} [Continuación en estilo ${style}]`,
+                            max_tokens: 150,
+                            temperature: 0.7
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
+                    const continuation = data.choices[0].text.trim();
+                    selectedOutput.textContent = continuation.slice(0, (lengthSlider.value / 100) * maxLength);
+                } catch (error) {
+                    console.error('Error:', error);
+                    selectedOutput.textContent = 'Error al generar el texto.';
+                }
+            });
+        });
+
+        // Control deslizante de longitud
+        lengthSlider.addEventListener('input', () => {
+            selectedOutput.textContent = selectedOutput.textContent.slice(0, (lengthSlider.value / 100) * maxLength);
+        });
+
+        // Inicialización
+        updateStyleBoxes();
+        styleSlider.dispatchEvent(new Event('input')); // Oculta los estilos adicionales inicialmente
+    </script>
+</body>
+</html>
